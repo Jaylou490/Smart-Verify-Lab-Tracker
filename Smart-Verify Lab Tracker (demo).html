@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Smart-Verify Lab Tracker (demo)</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef2f4;--card:#fff;--ink:#10242b;--mute:#5b6f77;--line:#cfdadf;--acc:#0e7c86;--accink:#fff;--warn:#d9480f;--ok:#2f7d3b;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1a1f;--card:#15262d;--ink:#e6f0f2;--mute:#93a9b1;--line:#2a4049;--acc:#35b6c2;--accink:#06161a;--warn:#ff8a5c;--ok:#6fcf7d}}
+:root[data-theme="dark"]{--bg:#0d1a1f;--card:#15262d;--ink:#e6f0f2;--mute:#93a9b1;--line:#2a4049;--acc:#35b6c2;--accink:#06161a;--warn:#ff8a5c;--ok:#6fcf7d}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 Archivo,system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:560px;margin:0 auto;padding:16px}
+h1{font-weight:800;font-size:clamp(34px,10vw,52px);line-height:.95;letter-spacing:-.02em;margin:8px 0 4px}
+.sub{color:var(--mute);margin:0 0 14px}
+.bar{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+.pill{border:1.5px solid var(--line);border-radius:99px;padding:5px 12px;font-size:14px;background:var(--card)}
+.pill.off{border-color:var(--warn);color:var(--warn)}
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.tabs button{flex:1;padding:12px 6px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font:600 15px Archivo,system-ui,sans-serif}
+.tabs button[aria-selected=true]{background:var(--acc);color:var(--accink);border-color:var(--acc)}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+label{display:block;font-weight:600;margin:10px 0 4px}
+input{width:100%;padding:13px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit}
+.row{display:flex;gap:8px}.row>*{flex:1}
+button.b{padding:13px;border-radius:10px;border:0;background:var(--acc);color:var(--accink);font:600 16px Archivo,system-ui,sans-serif;width:100%;margin-top:12px}
+button.b.alt{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+button.b.bad{background:var(--warn);color:#fff}
+button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.msg{padding:10px 12px;border-radius:10px;margin-top:10px;font-weight:600}
+.msg.err{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+.msg.good{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.tool{display:flex;gap:14px;align-items:center}
+.tool svg{width:84px;height:84px;flex:none;border-radius:12px;background:var(--bg)}
+.tool b{font-size:19px}
+.chk{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.chk input{width:24px;height:24px;flex:none}
+.loan{padding:12px 0;border-top:1px solid var(--line)}
+.loan:first-child{border-top:0}
+.t{font-variant-numeric:tabular-nums;font-weight:800}
+.late{color:var(--warn)}
+small{color:var(--mute)}
+.hide{display:none}
+</style>
+</head>
+<body>
+<main>
+<h1>SMART-VERIFY<br>LAB TRACKER</h1>
+<p class="sub">Demo prototype. Fake data, saved only in this browser.</p>
+<div class="bar">
+  <span id="net" class="pill">Online</span>
+  <span id="pend" class="pill">0 waiting to sync</span>
+  <button id="tog" class="pill" style="color:var(--ink);font:inherit">Simulate offline</button>
+</div>
+<div class="tabs" role="tablist">
+  <button role="tab" id="t1" aria-selected="true">Borrow</button>
+  <button role="tab" id="t2" aria-selected="false">Return</button>
+  <button role="tab" id="t3" aria-selected="false">Ledger</button>
+</div>
+
+<section id="p1">
+  <div class="card" id="s1">
+    <b>Step 1: student</b>
+    <label for="sid">Student ID</label>
+    <div class="row"><input id="sid" placeholder="S1001" autocomplete="off"><button class="b alt" id="scanSid" style="margin:0;flex:none;width:auto;padding:0 14px">Scan</button></div>
+    <label for="pin">Secret 4-digit PIN</label>
+    <input id="pin" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
+    <button class="b" id="go1">Verify student</button>
+    <div id="m1"></div>
+    <small>Demo students: S1001 (PIN 1234), S1002 (4321), S1003 (1111)</small>
+  </div>
+  <div class="card hide" id="s2">
+    <b id="who"></b>
+    <label for="tc">Tool code</label>
+    <div class="row"><input id="tc" placeholder="LAB-OSC-042" autocomplete="off"><button class="b alt" id="scanTc" style="margin:0;flex:none;width:auto;padding:0 14px">Scan</button></div>
+    <button class="b" id="go2">Find tool</button>
+    <div id="m2"></div>
+    <small>Demo tools: LAB-OSC-042, LAB-MUL-007, LAB-SOL-013</small>
+  </div>
+  <div class="card hide" id="s3">
+    <div class="tool"><span id="pic"></span><div><b id="tn"></b><br><small id="tcode"></small></div></div>
+    <p>Check that this is the real tool in front of you.</p>
+    <button class="b" id="confirm">Confirm and hand over</button>
+    <button class="b alt" id="cancel">Cancel</button>
+  </div>
+  <div class="card hide" id="undo">
+    <div id="undoTxt"></div>
+    <button class="b bad" id="undoBtn">Undo scan</button>
+  </div>
+</section>
+
+<section id="p2" class="hide">
+  <div class="card">
+    <label for="rc">Scan the tool being returned</label>
+    <div class="row"><input id="rc" placeholder="LAB-OSC-042" autocomplete="off"><button class="b alt" id="scanRc" style="margin:0;flex:none;width:auto;padding:0 14px">Scan</button></div>
+    <button class="b" id="go3">Start return check</button>
+    <div id="m3"></div>
+  </div>
+  <div class="card hide" id="rcard">
+    <b id="rt"></b><br><small id="rs"></small>
+    <div id="rl"></div>
+    <button class="b" id="approve">Approve return</button>
+    <button class="b alt" id="incomp">Mark incomplete</button>
+    <div id="m4"></div>
+  </div>
+</section>
+
+<section id="p3" class="hide">
+  <div class="card"><b>Out right now</b><div id="out"></div></div>
+  <div class="card"><b>Sync log</b><div id="log"><small>Nothing yet.</small></div></div>
+  <button class="b alt" id="reset">Reset demo data</button>
+</section>
+</main>
+
+<script>
+(function(){
+var DUE_MIN=2; // demo: tools are due after 2 minutes. Real app: set per tool or class period.
+var TEACHER_CODE="7777"; // demo emergency code
+var STUDENTS={S1001:{n:"Ava",p:"1234"},S1002:{n:"Ben",p:"4321"},S1003:{n:"Chloe",p:"1111"}};
+var TOOLS={
+ "LAB-OSC-042":{n:"Oscilloscope",parts:["Power cable","Probes","Main box"],g:"M10 60 L25 60 L35 30 L50 70 L62 35 L74 50"},
+ "LAB-MUL-007":{n:"Multimeter",parts:["Red lead","Black lead","Battery cover","Main unit"],g:"M42 18 L42 66 M42 42 L60 28"},
+ "LAB-SOL-013":{n:"Soldering iron",parts:["Stand","Tip","Power cable"],g:"M16 66 L64 22 M64 22 L70 16"}
+};
+var S={loans:[],queue:[],log:[],offline:false};
+try{var raw=localStorage.getItem("svlt");if(raw)S=JSON.parse(raw)}catch(e){}
+function save(){try{localStorage.setItem("svlt",JSON.stringify(S))}catch(e){}}
+function $(i){return document.getElementById(i)}
+function show(id,on){$(id).classList.toggle("hide",!on)}
+function say(id,t,k){var d=$(id);d.innerHTML="";if(!t)return;var m=document.createElement("div");m.className="msg "+k;m.textContent=t;d.appendChild(m)}
+function pic(code){var g=TOOLS[code].g;return '<svg viewBox="0 0 84 84" aria-hidden="true"><path d="'+g+'" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--acc)"/></svg>'}
+function mmss(ms){var s=Math.floor(Math.abs(ms)/1000);return Math.floor(s/60)+":"+("0"+s%60).slice(-2)}
+
+// offline queue: every action is saved on the device first, then "synced"
+function record(text){
+  S.queue.push({t:Date.now(),text:text});save();
+  if(!S.offline)sync();
+  draw();
+}
+function sync(){
+  if(S.offline||!S.queue.length)return;
+  var n=S.queue.length;
+  S.log.unshift(new Date().toLocaleTimeString()+": synced "+n+" action"+(n>1?"s":""));
+  S.log=S.log.slice(0,8);S.queue=[];save();
+}
+$("tog").onclick=function(){S.offline=!S.offline;if(!S.offline)sync();save();draw()};
+
+// tabs
+function tab(n){
+  for(var i=1;i<=3;i++){show("p"+i,i===n);$("t"+i).setAttribute("aria-selected",i===n)}
+  draw();
+}
+$("t1").onclick=function(){tab(1)};$("t2").onclick=function(){tab(2)};$("t3").onclick=function(){tab(3)};
+
+// camera scan (works in browsers that support BarcodeDetector, e.g. Chrome on Android)
+function scan(into){
+  if(!("BarcodeDetector" in window)){alert("Camera scanning isn't supported in this browser. Type the code instead.");return}
+  var v=document.createElement("video");v.setAttribute("playsinline","");v.style.cssText="position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:9";
+  document.body.appendChild(v);
+  var stop=function(s){s.getTracks().forEach(function(t){t.stop()});v.remove()};
+  navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}).then(function(st){
+    v.srcObject=st;v.play();
+    var det=new BarcodeDetector({formats:["qr_code"]});
+    v.onclick=function(){stop(st)};
+    (function loop(){
+      if(!v.isConnected)return;
+      det.detect(v).then(function(r){
+        if(r.length){$(into).value=r[0].rawValue;stop(st)}else requestAnimationFrame(loop)
+      }).catch(function(){requestAnimationFrame(loop)})
+    })();
+  }).catch(function(){v.remove();alert("Camera blocked. Type the code instead.")});
+}
+$("scanSid").onclick=function(){scan("sid")};
+$("scanTc").onclick=function(){scan("tc")};
+$("scanRc").onclick=function(){scan("rc")};
+
+// borrow flow
+var cur=null,pendingTool=null,undoTimer=null,override=false;
+function late(sid){return S.loans.filter(function(l){return l.sid===sid&&l.status==="out"&&Date.now()>l.due})}
+$("go1").onclick=function(){
+  var id=$("sid").value.trim().toUpperCase(),st=STUDENTS[id];
+  override=false;
+  if(!st||st.p!==$("pin").value){say("m1","ID or PIN is wrong. Try again.","err");return}
+  if(late(id).length){
+    var c=prompt("This student has a late return. Teacher emergency code:");
+    if(c!==TEACHER_CODE){say("m1","Blocked: return the late tool first, or ask a teacher for the emergency code.","err");return}
+    override=true;
+  }
+  cur=id;say("m1","");
+  $("who").textContent="Hi "+st.n+" ("+id+"). Now scan a tool.";
+  show("s1",false);show("s2",true);
+};
+$("go2").onclick=function(){
+  var c=$("tc").value.trim().toUpperCase();
+  if(!TOOLS[c]){say("m2","Unknown tool code.","err");return}
+  var l=S.loans.filter(function(x){return x.tool===c})[0];
+  if(l){say("m2","That tool is already out with "+STUDENTS[l.sid].n+".","err");return}
+  pendingTool=c;say("m2","");
+  $("pic").innerHTML=pic(c);$("tn").textContent=TOOLS[c].n;$("tcode").textContent=c;
+  show("s2",false);show("s3",true);
+};
+$("cancel").onclick=function(){reset1()};
+function reset1(){cur=null;pendingTool=null;$("sid").value="";$("pin").value="";$("tc").value="";show("s1",true);show("s2",false);show("s3",false)}
+$("confirm").onclick=function(){
+  var now=Date.now(),loan={tool:pendingTool,sid:cur,out:now,due:now+DUE_MIN*60000,status:"out",missing:[]};
+  S.loans.push(loan);record(STUDENTS[cur].n+" borrowed "+TOOLS[pendingTool].n);
+  var tool=pendingTool,secs=30;
+  show("s3",false);show("undo",true);
+  clearInterval(undoTimer);
+  function paint(){$("undoTxt").textContent=TOOLS[tool].n+" is now timed. Scanned by mistake? Undo within "+secs+"s."}
+  paint();
+  undoTimer=setInterval(function(){secs--;if(secs<=0){clearInterval(undoTimer);show("undo",false);reset1()}else paint()},1000);
+  $("undoBtn").onclick=function(){
+    clearInterval(undoTimer);
+    S.loans=S.loans.filter(function(l){return l!==loan&&!(l.tool===loan.tool&&l.out===loan.out)});
+    record("Undo: "+TOOLS[tool].n+" checkout cancelled");
+    show("undo",false);reset1();
+  };
+};
+
+// return flow
+var rl=null;
+$("go3").onclick=function(){
+  var c=$("rc").value.trim().toUpperCase();
+  rl=S.loans.filter(function(l){return l.tool===c})[0];
+  if(!rl){say("m3","That tool isn't checked out.","err");return}
+  say("m3","");
+  var parts=rl.status==="incomplete"?rl.missing:TOOLS[c].parts;
+  $("rt").textContent=TOOLS[c].n+" from "+STUDENTS[rl.sid].n;
+  $("rs").textContent=rl.status==="incomplete"?"Only the missing parts are listed.":"Tick each part that came back.";
+  $("rl").innerHTML="";
+  parts.forEach(function(p,i){
+    var d=document.createElement("label");d.className="chk";
+    var cb=document.createElement("input");cb.type="checkbox";cb.dataset.p=p;
+    d.appendChild(cb);d.appendChild(document.createTextNode(p));$("rl").appendChild(d);
+  });
+  say("m4","");show("rcard",true);
+};
+function boxes(){return Array.prototype.slice.call($("rl").querySelectorAll("input"))}
+$("approve").onclick=function(){
+  if(boxes().some(function(b){return !b.checked})){say("m4","Some parts aren't ticked. Tick them all, or mark incomplete.","err");return}
+  S.loans=S.loans.filter(function(l){return l!==rl});
+  record(STUDENTS[rl.sid].n+" returned "+TOOLS[rl.tool].n+" (complete)");
+  say("m3","Approved. Tool is ready for the next person.","good");
+  show("rcard",false);$("rc").value="";
+};
+$("incomp").onclick=function(){
+  var miss=boxes().filter(function(b){return !b.checked}).map(function(b){return b.dataset.p});
+  if(!miss.length){say("m4","Everything is ticked. Use Approve instead.","err");return}
+  rl.status="incomplete";rl.missing=miss;
+  record(STUDENTS[rl.sid].n+" returned "+TOOLS[rl.tool].n+" missing: "+miss.join(", "));
+  say("m3","Marked incomplete. It stays on the student's account.","good");
+  show("rcard",false);$("rc").value="";
+};
+
+// ledger + header
+$("reset").onclick=function(){if(confirm("Clear all demo data?")){S={loans:[],queue:[],log:[],offline:false};save();reset1();draw()}};
+function draw(){
+  $("net").textContent=S.offline?"Offline":"Online";$("net").className="pill"+(S.offline?" off":"");
+  $("tog").textContent=S.offline?"Go back online":"Simulate offline";
+  $("pend").textContent=S.queue.length+" waiting to sync";
+  var o=$("out");o.innerHTML="";
+  if(!S.loans.length)o.innerHTML="<p><small>No tools out. Borrow one on the first tab.</small></p>";
+  S.loans.forEach(function(l){
+    var d=document.createElement("div");d.className="loan";
+    var left=l.due-Date.now(),isLate=left<0&&l.status==="out";
+    var a=document.createElement("b");a.textContent=TOOLS[l.tool].n+" ("+l.tool+")";
+    var b=document.createElement("div");b.textContent=STUDENTS[l.sid].n+" ("+l.sid+")";
+    var c=document.createElement("div");
+    if(l.status==="incomplete"){c.className="late";c.textContent="Incomplete. Missing: "+l.missing.join(", ")}
+    else{c.innerHTML='<span class="t'+(isLate?" late":"")+'">'+(isLate?"Late by ":"Due in ")+mmss(left)+"</span>"}
+    d.appendChild(a);d.appendChild(b);d.appendChild(c);o.appendChild(d);
+  });
+  var lg=$("log");lg.innerHTML="";
+  if(!S.log.length)lg.innerHTML="<small>Nothing yet.</small>";
+  S.log.forEach(function(t){var p=document.createElement("div");p.textContent=t;lg.appendChild(p)});
+}
+setInterval(function(){if(!$("p3").classList.contains("hide"))draw()},1000);
+draw();
+})();
+</script>
+</body>
+</html>
